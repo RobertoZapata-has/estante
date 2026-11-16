@@ -1,0 +1,23 @@
+{
+  "name": "Estante",
+  "short_name": "Estante",
+  "description": "Tu biblioteca de ebooks con modo tinta electrónica y lectura en voz alta",
+  "lang": "es-AR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#E8E6DF",
+  "theme_color": "#E8E6DF",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "share_target": {
+    "action": "./compartir",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": { "files": [ { "name": "libros", "accept": ["application/epub+zip", ".epub"] } ] }
+  }
+}

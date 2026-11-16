@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#E8E6DF">
+<title>Estante</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+@font-face{font-family:Literata;src:url(fonts/literata-latin-400-normal.woff2) format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:Literata;src:url(fonts/literata-latin-400-italic.woff2) format('woff2');font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:Literata;src:url(fonts/literata-latin-700-normal.woff2) format('woff2');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:Literata;src:url(fonts/literata-latin-700-italic.woff2) format('woff2');font-weight:700;font-style:italic;font-display:swap}
+
+:root{--bg:#E8E6DF;--fg:#141414;--mut:#56554f;--line:#141414;--hl:#cbc8bd;--fs:20px;--lh:1.6;--libro:Literata,Georgia,serif}
+body.noche{--bg:#111110;--fg:#d6d1c6;--mut:#8b877e;--line:#5c5953;--hl:#3a3833}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* Tinta electrónica: nada se desliza ni se desvanece, todo cambia de golpe */
+*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);font-family:Literata,Georgia,serif}
+body{overscroll-behavior:none}
+[hidden]{display:none!important}
+button,.btn,select{font:inherit;font-size:15px;color:var(--fg);background:var(--bg);border:1.5px solid var(--line);border-radius:6px;padding:.55em .9em;cursor:pointer;line-height:1.2;display:inline-flex;align-items:center;justify-content:center;gap:.4em}
+button:active,.btn:active,button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+button:disabled{opacity:.45}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ib{padding:.45em;min-width:42px;min-height:42px}
+.ui{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+
+/* ---------- Estante ---------- */
+#lib{max-width:980px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 14px) 16px calc(30px + env(safe-area-inset-bottom))}
+.lib-h{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:2px solid var(--line);padding-bottom:10px;margin-bottom:16px}
+.lib-h h1{margin:0;font-size:30px;letter-spacing:.02em}
+.lib-h .acc{display:flex;gap:8px}
+#aviso{border:1.5px dashed var(--line);padding:10px 12px;border-radius:6px;font-size:14px;margin-bottom:14px}
+#seguir{display:flex;gap:14px;align-items:center;border:1.5px solid var(--line);border-radius:8px;padding:12px;margin-bottom:20px;width:100%;text-align:left;justify-content:flex-start}
+#seguir .tapa{width:64px;flex:none}
+#seguir small{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin-bottom:4px}
+#seguir b{display:block;font-size:18px;line-height:1.25}
+#seguir:active small{color:inherit}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:18px 14px}
+.lb{position:relative;display:flex;flex-direction:column;gap:6px;cursor:pointer}
+.tapa{aspect-ratio:2/3;width:100%;border:1.5px solid var(--line);border-radius:3px;overflow:hidden;background:var(--bg);display:block}
+.tapa img{width:100%;height:100%;object-fit:cover;display:block}
+body.tinta .tapa img,body.tinta #flow img{filter:grayscale(1) contrast(1.05)}
+body.noche .tapa img,body.noche #flow img{filter:grayscale(.3) brightness(.85)}
+.falsa{height:100%;display:flex;flex-direction:column;justify-content:space-between;padding:12% 10%;text-align:center;border:4px double var(--line);margin:4px;height:calc(100% - 8px)}
+.falsa b{font-size:14px;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical}
+.falsa i{font-size:11px;color:var(--mut)}
+.lb .t{font-size:14px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.lb .a{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb .pr{height:4px;border:1px solid var(--line);border-radius:2px}
+.lb .pr i{display:block;height:100%;background:var(--fg)}
+.lb .mas{position:absolute;top:4px;right:4px;padding:2px 8px;font-size:16px;min-width:0;border-radius:4px}
+#vacio{font-size:16px;line-height:1.55;color:var(--mut);max-width:30em}
+#vacio b{color:var(--fg)}
+
+/* ---------- Lector ---------- */
+#rd{position:fixed;inset:0;background:var(--bg)}
+#pv{position:absolute;left:0;right:0;top:env(safe-area-inset-top);bottom:calc(30px + env(safe-area-inset-bottom));overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#rd.con-tts #pv{bottom:calc(30px + 66px + env(safe-area-inset-bottom))}
+#flow{position:absolute;column-fill:auto;font-family:var(--libro);font-size:var(--fs);line-height:var(--lh);overflow-wrap:break-word;orphans:2;widows:2}
+#flow.just{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
+#flow p{margin:0 0 .2em;text-indent:1.3em}
+#flow h1,#flow h2,#flow h3,#flow h4{text-align:center;hyphens:none;line-height:1.25;margin:1em 0 .8em;break-after:avoid;text-indent:0;font-weight:700}
+#flow h1{font-size:1.45em}#flow h2{font-size:1.28em}#flow h3{font-size:1.12em}#flow h4,#flow h5,#flow h6{font-size:1em}
+#flow h1+p,#flow h2+p,#flow h3+p,#flow hr+p{text-indent:0}
+#flow img{display:block;max-width:100%;max-height:var(--H);height:auto;margin:.5em auto;break-inside:avoid;object-fit:contain}
+#flow blockquote{margin:.6em 0 .6em 1.2em}
+#flow ul,#flow ol{padding-left:1.4em}
+#flow a{color:inherit;text-decoration:underline;text-decoration-thickness:1px}
+#flow hr{border:0;border-top:1px solid var(--line);margin:1em 25%}
+#flow table{border-collapse:collapse;font-size:.88em;max-width:100%}
+#flow td,#flow th{border:1px solid var(--line);padding:.2em .4em}
+#flow pre{white-space:pre-wrap;font-size:.85em}
+#flow sup,#flow sub{line-height:0}
+#flow .s.hl{background:var(--hl);-webkit-box-decoration-break:clone;box-decoration-break:clone;border-radius:2px}
+#foot{position:absolute;left:0;right:0;bottom:env(safe-area-inset-bottom);height:30px;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:0 16px;font-size:12.5px;color:var(--mut)}
+#fCap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#fPag{white-space:nowrap}
+#volver{position:absolute;left:12px;bottom:calc(36px + env(safe-area-inset-bottom));font-size:14px;padding:.35em .8em;z-index:4}
+#rd.con-tts #volver{bottom:calc(102px + env(safe-area-inset-bottom))}
+
+#bar{position:absolute;top:0;left:0;right:0;z-index:6;background:var(--bg);border-bottom:1.5px solid var(--line);padding:calc(env(safe-area-inset-top) + 8px) 10px 10px;display:flex;align-items:center;gap:8px}
+#bar .tit{flex:1;min-width:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+#sol.on{background:var(--fg);color:var(--bg)}
+
+#tts{position:absolute;left:0;right:0;bottom:calc(30px + env(safe-area-inset-bottom));height:66px;z-index:5;border-top:1.5px solid var(--line);background:var(--bg);display:flex;align-items:center;justify-content:center;gap:8px;padding:0 10px}
+#tts .vel,#tts .tim{font-size:14px;min-width:58px;padding:.5em .55em}
+#tPlay{min-width:54px;min-height:46px}
+
+/* ---------- Hojas (paneles) ---------- */
+#sheet{position:fixed;inset:0;z-index:10}
+#sheet .fondo{position:absolute;inset:0;background:rgba(0,0,0,.28)}
+body.tinta #sheet .fondo{background:repeating-linear-gradient(45deg,rgba(0,0,0,.10) 0 2px,transparent 2px 6px)}
+.sh-in{position:absolute;left:0;right:0;bottom:0;margin:0 auto;max-width:640px;max-height:82vh;overflow:auto;background:var(--bg);border:2px solid var(--line);border-bottom:0;border-radius:10px 10px 0 0;padding:14px 16px calc(18px + env(safe-area-inset-bottom))}
+.sh-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.sh-h h2{margin:0;font-size:19px}
+.fila{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.fila:last-child{border-bottom:0}
+.fila>span{font-size:15px}
+.fila .grp{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.fila .grp button{padding:.45em .75em}
+.nota{font-size:13px;color:var(--mut);margin:4px 0 0;line-height:1.4}
+select{max-width:62vw;padding:.45em .5em}
+.toc button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:.75em .2em;font-size:16px;justify-content:flex-start}
+.toc button.act{font-weight:700;text-decoration:underline}
+.peligro{width:100%;margin-top:10px}
+
+#toast{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:88vw;z-index:20;background:var(--fg);color:var(--bg);padding:10px 14px;border-radius:6px;font-size:14px;text-align:center}
+#cargando{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--mut);z-index:3;background:var(--bg)}
+</style>
+</head>
+<body class="tinta">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-atras" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-lista" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></symbol>
+  <symbol id="i-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-voz" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 9a4 4 0 010 6M19.5 6a8 8 0 010 12"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z" fill="currentColor"/></symbol>
+  <symbol id="i-pausa" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></symbol>
+  <symbol id="i-ant" viewBox="0 0 24 24"><path d="M18 6l-8 6 8 6zM6 6v12"/></symbol>
+  <symbol id="i-sig" viewBox="0 0 24 24"><path d="M6 6l8 6-8 6zM18 6v12"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-luna" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></symbol>
+  <symbol id="i-mas" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+</svg>
+
+<!-- ================= ESTANTE ================= -->
+<main id="lib">
+  <header class="lib-h">
+    <h1>Estante</h1>
+    <div class="acc">
+      <button class="ib" id="bTema" aria-label="Cambiar entre tinta y noche" title="Tinta / Noche"><svg class="i"><use href="#i-luna"/></svg></button>
+      <label class="btn" for="fi"><svg class="i"><use href="#i-mas"/></svg>Agregar</label>
+      <input id="fi" type="file" accept=".epub,application/epub+zip,.pdf,.mobi,.azw3" multiple hidden>
+    </div>
+  </header>
+  <div id="aviso" class="ui" hidden></div>
+  <button id="seguir" hidden></button>
+  <div id="grid"></div>
+  <p id="vacio" hidden>Todavía no hay libros.<br>Tocá <b>Agregar</b> y elegí tus <b>EPUB</b> (podés marcar varios a la vez). Quedan guardados en este aparato y se leen sin internet.</p>
+</main>
+
+<!-- ================= LECTOR ================= -->
+<div id="rd" hidden>
+  <div id="pv"><div id="flow" lang="es"></div></div>
+  <div id="cargando" hidden>Abriendo…</div>
+  <div id="foot" class="ui"><span id="fCap"></span><span id="fPag"></span></div>
+  <button id="volver" class="ui" hidden>↩ Volver</button>
+
+  <div id="bar" hidden>
+    <button class="ib" id="bEstante" aria-label="Volver al estante"><svg class="i"><use href="#i-atras"/></svg></button>
+    <div class="tit" id="bTit"></div>
+    <button class="ib" id="bIndice" aria-label="Índice"><svg class="i"><use href="#i-lista"/></svg></button>
+    <button class="ib" id="bAjustes" aria-label="Letra y ajustes" style="font-weight:700">Aa</button>
+    <button class="ib" id="sol" aria-label="Pantalla siempre encendida"><svg class="i"><use href="#i-sol"/></svg></button>
+    <button class="ib" id="bLeer" aria-label="Leer en voz alta"><svg class="i"><use href="#i-voz"/></svg></button>
+  </div>
+
+  <div id="tts" class="ui" hidden>
+    <button class="ib" id="tAnt" aria-label="Frase anterior"><svg class="i"><use href="#i-ant"/></svg></button>
+    <button class="ib" id="tPlay" aria-label="Pausa"><svg class="i"><use href="#i-pausa"/></svg></button>
+    <button class="ib" id="tSig" aria-label="Frase siguiente"><svg class="i"><use href="#i-sig"/></svg></button>
+    <button class="vel" id="tVel" aria-label="Velocidad">1×</button>
+    <button class="tim" id="tTim" aria-label="Apagar a los…">☾ no</button>
+    <button class="ib" id="tCerrar" aria-label="Dejar de leer en voz alta"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+</div>
+
+<div id="sheet" hidden><div class="fondo"></div><div class="sh-in"></div></div>
+<div id="toast" class="ui" hidden></div>
+
+<script src="jszip.min.js"></script>
+<script>
+"use strict";
+/* =========================================================
+   ESTANTE — biblioteca y lector de EPUB
+   modo tinta · pantalla encendida · lectura en voz alta
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const esperar = ms => new Promise(r => setTimeout(r, ms));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function leerLS(k){ try{ return JSON.parse(localStorage.getItem(k)) }catch(e){ return null } }
+function guardarLS(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)) }catch(e){} }
+
+const P = Object.assign({ tema:'tinta', fs:20, lh:1.6, marg:1, fuente:'serif', just:true,
+  siempre:false, voz:'', vel:1 }, leerLS('estante-prefs') || {});
+const guardarP = () => guardarLS('estante-prefs', P);
+
+/* ---------- aviso corto ---------- */
+let toastT = 0;
+function toast(msg, ms = 2600){
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, ms);
+}
+
+/* =========================================================
+   ALMACENAMIENTO (IndexedDB: libros, archivos y progreso)
+   ========================================================= */
+let db = null;
+const mem = { books:new Map(), files:new Map(), prog:new Map() };
+function abrirDB(){
+  return new Promise(res => {
+    try{
+      const r = indexedDB.open('estante', 1);
+      r.onupgradeneeded = () => { const d = r.result;
+        d.createObjectStore('books', { keyPath:'id' }); d.createObjectStore('files'); d.createObjectStore('prog'); };
+      r.onsuccess = () => res(r.result); r.onerror = () => res(null); r.onblocked = () => res(null);
+    }catch(e){ res(null) }
+  });
+}
+function tx(stores, modo, fn){
+  return new Promise((res, rej) => {
+    const t = db.transaction(stores, modo); let out;
+    const r = fn(t); if (r) r.onsuccess = () => { out = r.result };
+    t.oncomplete = () => res(out); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+  });
+}
+const DB = {
+  all(){ return db ? tx('books','readonly', t => t.objectStore('books').getAll()) : Promise.resolve([...mem.books.values()]) },
+  get(id){ return db ? tx('books','readonly', t => t.objectStore('books').get(id)) : Promise.resolve(mem.books.get(id)) },
+  async add(meta, file){
+    if (!db){ mem.books.set(meta.id, meta); mem.files.set(meta.id, file); return }
+    return tx(['books','files'],'readwrite', t => { t.objectStore('books').put(meta); t.objectStore('files').put(file, meta.id) });
+  },
+  file(id){ return db ? tx('files','readonly', t => t.objectStore('files').get(id)) : Promise.resolve(mem.files.get(id)) },
+  allProg(){
+    if (!db) return Promise.resolve(new Map(mem.prog));
+    return new Promise((res, rej) => {
+      const m = new Map(); const t = db.transaction('prog','readonly'); const c = t.objectStore('prog').openCursor();
+      c.onsuccess = () => { const cur = c.result; if (cur){ m.set(cur.key, cur.value); cur.continue() } };
+      t.oncomplete = () => res(m); t.onerror = () => rej(t.error);
+    });
+  },
+  prog(id){ return db ? tx('prog','readonly', t => t.objectStore('prog').get(id)) : Promise.resolve(mem.prog.get(id)) },
+  setProg(id, v){ if (!db){ mem.prog.set(id, v); return Promise.resolve() } return tx('prog','readwrite', t => t.objectStore('prog').put(v, id)) },
+  del(id){
+    if (!db){ mem.books.delete(id); mem.files.delete(id); mem.prog.delete(id); return Promise.resolve() }
+    return tx(['books','files','prog'],'readwrite', t => { for (const s of ['books','files','prog']) t.objectStore(s).delete(id) });
+  }
+};
+
+/* =========================================================
+   LECTURA DEL EPUB (es un .zip con páginas XHTML adentro)
+   ========================================================= */
+const parseXML = s => new DOMParser().parseFromString(s, 'application/xml');
+const porTag = (n, tag) => [...n.getElementsByTagNameNS('*', tag)];
+const carpeta = p => p.includes('/') ? p.replace(/[^/]*$/, '') : '';
+function unir(base, rel){
+  rel = (rel || '').split('#')[0];
+  try{ rel = decodeURIComponent(rel) }catch(e){}
+  const out = [];
+  for (const p of (rel.startsWith('/') ? rel.slice(1) : base + rel).split('/')){
+    if (p === '..') out.pop(); else if (p && p !== '.') out.push(p);
+  }
+  return out.join('/');
+}
+function zfile(zip, path){
+  if (!path) return null;
+  let f = zip.file(path); if (f) return f;
+  const low = path.toLowerCase();
+  return zip.file(/.*/).find(x => x.name.toLowerCase() === low) || null;
+}
+function mimeDe(path){
+  const e = (path.split('.').pop() || '').toLowerCase();
+  return ({jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',svg:'image/svg+xml',webp:'image/webp'})[e] || 'application/octet-stream';
+}
+
+async function parsearEpub(zip){
+  const cont = zfile(zip, 'META-INF/container.xml');
+  if (!cont) throw new Error('no parece un EPUB');
+  const enc = zfile(zip, 'META-INF/encryption.xml');
+  if (enc){
+    const ex = await enc.async('string');
+    if (/URI="[^"]+\.(x?html?|xml)"/i.test(ex)) throw new Error('tiene DRM (protección anticopia) y no se puede abrir');
+  }
+  const opfPath = porTag(parseXML(await cont.async('string')), 'rootfile')[0]?.getAttribute('full-path');
+  const opfF = zfile(zip, opfPath); if (!opfF) throw new Error('EPUB incompleto');
+  const opf = parseXML(await opfF.async('string'));
+  const base = carpeta(opfPath);
+  const txt = tag => porTag(opf, tag)[0]?.textContent.trim() || '';
+  const titulo = txt('title') || 'Sin título';
+  const autor = txt('creator');
+
+  const items = {};
+  for (const it of porTag(opf, 'item')){
+    items[it.getAttribute('id')] = { href: unir(base, it.getAttribute('href')), type: it.getAttribute('media-type') || '', props: it.getAttribute('properties') || '', id: it.getAttribute('id') };
+  }
+  const spine = [];
+  for (const ir of porTag(opf, 'itemref')){
+    const it = items[ir.getAttribute('idref')];
+    if (!it || !/html|xml/i.test(it.type)) continue;
+    const zf = zfile(zip, it.href); if (!zf) continue;
+    spine.push({ href: it.href, size: Math.max(200, zf._data?.uncompressedSize || 2000) });
+  }
+  if (!spine.length) throw new Error('no tiene capítulos legibles');
+  const idxDe = {}; spine.forEach((s, i) => idxDe[s.href] = i);
+
+  // tapa
+  let tapa = Object.values(items).find(i => /cover-image/.test(i.props));
+  if (!tapa){
+    const m = porTag(opf, 'meta').find(m => m.getAttribute('name') === 'cover');
+    if (m){ const c = m.getAttribute('content'); tapa = items[c] || Object.values(items).find(i => i.href.endsWith(c)) }
+  }
+  if (!tapa) tapa = Object.values(items).find(i => /image/.test(i.type) && /cover|portada|tapa/i.test(i.id + i.href));
+
+  // índice (EPUB 3: nav · EPUB 2: toc.ncx)
+  let toc = [];
+  try{
+    const nav = Object.values(items).find(i => /\bnav\b/.test(i.props));
+    if (nav){
+      const d = new DOMParser().parseFromString(await zfile(zip, nav.href).async('string'), 'application/xhtml+xml');
+      const navs = porTag(d, 'nav');
+      const n = navs.find(x => /toc/.test(x.getAttribute('epub:type') || x.getAttributeNS('http://www.idpf.org/2007/ops','type') || '')) || navs[0];
+      const dir = carpeta(nav.href);
+      const rec = (ol, dep) => { for (const li of ol.children){ if (li.localName !== 'li') continue;
+        const a = [...li.children].find(c => c.localName === 'a' || c.localName === 'span');
+        if (a){ const href = a.getAttribute('href') || ''; const p = unir(dir, href);
+          const lab = a.textContent.replace(/\s+/g,' ').trim();
+          if (lab) toc.push({ label: lab, ch: idxDe[p] ?? -1, frag: href.split('#')[1] || '', dep }) }
+        const sub = [...li.children].find(c => c.localName === 'ol'); if (sub) rec(sub, dep + 1) } };
+      const ol = n && porTag(n, 'ol')[0]; if (ol) rec(ol, 0);
+    }
+    if (!toc.length){
+      const tocId = porTag(opf, 'spine')[0]?.getAttribute('toc');
+      const ncxIt = items[tocId] || Object.values(items).find(i => /ncx/.test(i.type));
+      if (ncxIt){
+        const d = parseXML(await zfile(zip, ncxIt.href).async('string')); const dir = carpeta(ncxIt.href);
+        const rec = (el, dep) => { for (const np of el.children){ if (np.localName !== 'navPoint') continue;
+          const lab = porTag(np, 'text')[0]?.textContent.replace(/\s+/g,' ').trim() || '';
+          const src = [...np.children].find(c => c.localName === 'content')?.getAttribute('src') || '';
+          const p = unir(dir, src); if (lab) toc.push({ label: lab, ch: idxDe[p] ?? -1, frag: src.split('#')[1] || '', dep });
+          rec(np, dep + 1) } };
+        const nm = porTag(d, 'navMap')[0]; if (nm) rec(nm, 0);
+      }
+    }
+  }catch(e){ console.warn('índice', e) }
+  toc = toc.filter(t => t.ch >= 0);
+  return { titulo, autor, spine, toc, tapaPath: tapa?.href, idxDe };
+}
+
+async function achicarTapa(blob){
+  try{
+    const bmp = await createImageBitmap(blob);
+    const w = 360, h = Math.round(bmp.height * w / bmp.width);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    c.getContext('2d').drawImage(bmp, 0, 0, w, h);
+    return await new Promise(r => c.toBlob(b => r(b || blob), 'image/jpeg', .85));
+  }catch(e){ return blob }
+}
+
+/* ---------- agregar libros ---------- */
+async function importar(lista){
+  const files = [...lista]; if (!files.length) return;
+  const existentes = await DB.all();
+  let ok = 0, n = 0;
+  for (const f of files){
+    n++; const nom = f.name || 'libro';
+    if (files.length > 1) toast(`Agregando ${n} de ${files.length}…`, 60000);
+    if (/\.pdf$/i.test(nom)){ toast(`${nom}: los PDF llegan en la próxima etapa.`, 3500); await esperar(900); continue }
+    if (/\.(mobi|azw3?|kfx)$/i.test(nom)){ toast(`${nom}: es formato Kindle. Pasalo a EPUB con Calibre.`, 4000); await esperar(1200); continue }
+    try{
+      const zip = await JSZip.loadAsync(f);
+      const info = await parsearEpub(zip);
+      if (existentes.some(b => b.titulo === info.titulo && b.autor === info.autor && b.bytes === f.size)){ continue }
+      let tapa = null;
+      const zt = zfile(zip, info.tapaPath);
+      if (zt) tapa = await achicarTapa(new Blob([await zt.async('arraybuffer')], { type: mimeDe(info.tapaPath) }));
+      const meta = { id: (crypto.randomUUID ? crypto.randomUUID() : 'b' + Date.now() + Math.random()),
+        titulo: info.titulo, autor: info.autor, tapa, bytes: f.size, agregado: Date.now(),
+        tamanos: info.spine.map(s => s.size) };
+      await DB.add(meta, f.type ? f : new Blob([f], { type:'application/epub+zip' }));
+      existentes.push(meta); ok++;
+    }catch(e){ console.error(e); toast(`${nom}: ${e.message || 'no se pudo abrir'}`, 3800); await esperar(1500) }
+  }
+  if (ok) toast(ok === 1 ? 'Libro agregado' : `${ok} libros agregados`);
+  else if (files.length > 1) $('#toast').hidden = true;
+  pintarEstante();
+}
+
+/* =========================================================
+   ESTANTE (pantalla de inicio)
+   ========================================================= */
+let urlsTapas = [];
+function tapaHTML(b){
+  if (b.tapa){ const u = URL.createObjectURL(b.tapa); urlsTapas.push(u); return `<span class="tapa"><img src="${u}" alt=""></span>` }
+  return `<span class="tapa"><span class="falsa"><b>${esc(b.titulo)}</b><i>${esc(b.autor)}</i></span></span>`;
+}
+const esc = s => String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+function pctDe(b, pr){
+  if (!pr || !b.tamanos) return 0;
+  const tot = b.tamanos.reduce((a, x) => a + x, 0);
+  const antes = b.tamanos.slice(0, pr.ch).reduce((a, x) => a + x, 0);
+  return clamp(Math.round((antes + (pr.frac || 0) * (b.tamanos[pr.ch] || 0)) / tot * 100), 0, 100);
+}
+async function pintarEstante(){
+  urlsTapas.forEach(u => URL.revokeObjectURL(u)); urlsTapas = [];
+  const libros = await DB.all(); const prog = await DB.allProg();
+  libros.sort((a, b) => (prog.get(b.id)?.t || b.agregado) - (prog.get(a.id)?.t || a.agregado));
+  const g = $('#grid'); g.innerHTML = '';
+  $('#vacio').hidden = libros.length > 0;
+  const ult = libros.find(b => prog.get(b.id)?.t);
+  const sg = $('#seguir');
+  if (ult){
+    sg.hidden = false;
+    sg.innerHTML = `${tapaHTML(ult)}<span><small>Seguir leyendo · ${pctDe(ult, prog.get(ult.id))}%</small><b>${esc(ult.titulo)}</b><span class="ui" style="font-size:13px">${esc(ult.autor)}</span></span>`;
+    sg.onclick = () => abrirLibro(ult.id);
+  } else sg.hidden = true;
+  for (const b of libros){
+    const pc = pctDe(b, prog.get(b.id));
+    const d = document.createElement('div'); d.className = 'lb';
+    d.innerHTML = `${tapaHTML(b)}<span class="t">${esc(b.titulo)}</span><span class="a ui">${esc(b.autor)}</span>
+      <span class="pr"><i style="width:${pc}%"></i></span><button class="mas" aria-label="Opciones">⋯</button>`;
+    d.onclick = e => { if (e.target.closest('.mas')) menuLibro(b); else abrirLibro(b.id) };
+    g.appendChild(d);
+  }
+}
+function menuLibro(b){
+  const div = document.createElement('div');
+  div.innerHTML = `<p style="margin:0 0 6px">${esc(b.titulo)}</p><p class="nota">${esc(b.autor)} · ${(b.bytes/1048576).toFixed(1)} MB</p>
+    <button class="peligro" id="mBorrar">Borrar del estante</button>`;
+  abrirHoja('Libro', div);
+  div.querySelector('#mBorrar').onclick = e => {
+    const bt = e.currentTarget;
+    if (bt.dataset.seguro){ DB.del(b.id).then(() => { cerrarHoja(); pintarEstante(); toast('Libro borrado') }) }
+    else { bt.dataset.seguro = 1; bt.textContent = 'Tocá de nuevo para confirmar'; bt.setAttribute('aria-pressed', 'true') }
+  };
+}
+
+/* =========================================================
+   LECTOR
+   ========================================================= */
+const R = { id:null, meta:null, zip:null, info:null, ch:0, page:0, pages:1, n:1, colW:0, gap:0, paso:1,
+  sent:[], spans:[], urls:[], ocupado:false, hist:[], dormido:false };
+const flow = $('#flow'), pv = $('#pv');
+
+const PERMITIDAS = new Set('p div span h1 h2 h3 h4 h5 h6 em i b strong u s sub sup small big br hr blockquote ul ol li dl dt dd a figure figcaption table thead tbody tfoot tr td th caption pre code section article aside header footer cite q abbr center del ins mark var'.split(' '));
+const BLOQUES = new Set('p div h1 h2 h3 h4 h5 h6 blockquote ul ol li dl dt dd figure figcaption table tr td th pre section article aside header footer center caption body'.split(' '));
+const SALTEAR = new Set('script style link meta head title iframe object embed audio video form input button select textarea noscript math'.split(' '));
+
+function nodoImg(src, ctx, alt){
+  const img = document.createElement('img'); img.alt = alt || '';
+  const path = unir(ctx.dir, src); const zf = zfile(R.zip, path);
+  if (zf) ctx.imgs.push(zf.async('arraybuffer').then(buf => {
+    const u = URL.createObjectURL(new Blob([buf], { type: mimeDe(path) })); R.urls.push(u);
+    return new Promise(r => { img.onload = img.onerror = r; img.src = u });
+  }));
+  return img;
+}
+function convertir(n, ctx){
+  if (n.nodeType === 3) return document.createTextNode(n.nodeValue);
+  if (n.nodeType !== 1) return null;
+  const tag = (n.localName || '').toLowerCase();
+  if (SALTEAR.has(tag)) return null;
+  if (tag === 'svg'){
+    const im = porTag(n, 'image')[0];
+    return im ? nodoImg(im.getAttributeNS('http://www.w3.org/1999/xlink', 'href') || im.getAttribute('href'), ctx) : null;
+  }
+  if (tag === 'img') return nodoImg(n.getAttribute('src'), ctx, n.getAttribute('alt'));
+  let el;
+  if (PERMITIDAS.has(tag)){
+    el = document.createElement(tag === 'center' ? 'div' : tag);
+    const id = n.getAttribute('id') || (tag === 'a' && n.getAttribute('name'));
+    if (id) el.id = 'b_' + id;
+    if (tag === 'a' && n.hasAttribute('href')){
+      const h = n.getAttribute('href');
+      if (/^[a-z][a-z0-9+.-]*:/i.test(h)) el.dataset.ext = h;
+      else { const p = h.startsWith('#') ? ctx.path : unir(ctx.dir, h);
+        el.dataset.ch = R.info.idxDe[p] ?? -1; el.dataset.frag = h.split('#')[1] || '' }
+      el.setAttribute('href', '#');
+    }
+    for (const a of ['colspan','rowspan']) if (n.hasAttribute(a)) el.setAttribute(a, n.getAttribute(a));
+  } else el = document.createDocumentFragment();
+  for (const c of n.childNodes){ const k = convertir(c, ctx); if (k) el.appendChild(k) }
+  return el;
+}
+
+/* ---------- partir el texto en frases (para leerlas y resaltarlas) ---------- */
+const ABREV = /(?:^|[\s(—«"])(?:Sr|Sra|Srta|Sres|Dr|Dra|Lic|Ing|Prof|Profa|Ud|Uds|Vd|Vds|Gral|Cnel|Cap|Sto|Sta|St|Mr|Mrs|Ms|núm|Núm|pág|págs|art|vol|cap|fig|aprox|tel|av|Av|[A-ZÁÉÍÓÚÑ])\.$/;
+const FIN = /[.!?…]["»”’)\]]*$/;
+function bloqueDe(n, root){ let e = n.parentNode; while (e && e !== root && !BLOQUES.has(e.localName)) e = e.parentNode; return e }
+function envolverFrases(root){
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); const nodos = [];
+  while (w.nextNode()) nodos.push(w.currentNode);
+  const sent = []; let abierta = false, ultBloque = null;
+  for (const tn of nodos){
+    const t = tn.nodeValue; if (!t.trim()) continue;
+    const bl = bloqueDe(tn, root);
+    if (bl !== ultBloque){ abierta = false; ultBloque = bl }
+    // cortes después de . ! ? … seguidos de espacio
+    const piezas = []; let ini = 0; const re = /[.!?…]+["»”’)\]]*\s+/g; let m;
+    while ((m = re.exec(t))){
+      const fin = m.index + m[0].length; const previo = t.slice(ini, m.index + m[0].trimEnd().length);
+      if (ABREV.test(previo.trimEnd()) && !/[!?…]/.test(m[0])) continue;
+      piezas.push(t.slice(ini, fin)); ini = fin;
+    }
+    if (ini < t.length) piezas.push(t.slice(ini));
+    const frag = document.createDocumentFragment();
+    for (const pz of piezas){
+      if (!pz.trim()){ frag.appendChild(document.createTextNode(pz)); continue }
+      if (!abierta){ sent.push({ spans:[], text:'' }); abierta = true }
+      const s = sent[sent.length - 1]; const sp = document.createElement('span');
+      sp.className = 's'; sp.dataset.s = sent.length - 1; sp.textContent = pz;
+      s.spans.push(sp); s.text += pz; frag.appendChild(sp);
+      if (FIN.test(pz.trimEnd())) abierta = false;
+    }
+    tn.parentNode.replaceChild(frag, tn);
+  }
+  return sent;
+}
+
+/* ---------- paginado (columnas CSS: cada columna es una página) ---------- */
+function aplicarEstilo(){
+  document.body.classList.toggle('noche', P.tema === 'noche');
+  document.body.classList.toggle('tinta', P.tema !== 'noche');
+  document.querySelector('meta[name="theme-color"]').content = P.tema === 'noche' ? '#111110' : '#E8E6DF';
+  const r = document.documentElement.style;
+  r.setProperty('--fs', P.fs + 'px'); r.setProperty('--lh', P.lh);
+  r.setProperty('--libro', P.fuente === 'sans' ? 'system-ui,Roboto,"Segoe UI",sans-serif' : 'Literata,Georgia,serif');
+  flow.classList.toggle('just', !!P.just);
+}
+function medir(){
+  const m = [14, 24, 38][P.marg] ?? 24, mt = 22;
+  const ancho = pv.clientWidth, alto = pv.clientHeight;
+  // tablet acostada: dos páginas una al lado de la otra, como un libro abierto
+  const n = (ancho >= 800 && ancho > alto * 1.15) ? 2 : 1;
+  const W = Math.max(120, ancho - 2 * m), H = Math.max(120, alto - 2 * mt), gap = n === 2 ? Math.max(2 * m, 56) : 2 * m;
+  const colW = n === 2 ? (W - gap) / 2 : W;
+  Object.assign(flow.style, { left: m + 'px', top: mt + 'px', width: W + 'px', height: H + 'px', columnWidth: colW + 'px', columnGap: gap + 'px', columnCount: 'auto' });
+  flow.style.setProperty('--H', (H - 8) + 'px');
+  R.n = n; R.colW = colW; R.gap = gap; R.paso = n * (colW + gap);
+  const cols = Math.max(1, Math.round((flow.scrollWidth + gap) / (colW + gap)));
+  R.pages = Math.max(1, Math.ceil(cols / n));
+}
+function paginaDe(el){
+  if (!el) return 0;
+  const r = el.getClientRects()[0] || el.getBoundingClientRect(); const f = flow.getBoundingClientRect();
+  return clamp(Math.floor((r.left - f.left + 3) / R.paso), 0, R.pages - 1);
+}
+function fraseAlInicio(p){
+  const sp = R.spans; let lo = 0, hi = sp.length;
+  while (lo < hi){ const mid = (lo + hi) >> 1; if (paginaDe(sp[mid]) < p) lo = mid + 1; else hi = mid }
+  return lo < sp.length ? +sp[lo].dataset.s : null;
+}
+function irPagina(p){
+  R.page = clamp(p, 0, R.pages - 1);
+  flow.style.transform = `translateX(${-R.page * R.paso}px)`;
+  pie(); guardarProgreso();
+}
+function conAncla(fn){
+  // recuerda la frase de arriba de la página para no perder el lugar al cambiar la letra
+  const s = (R.anclaPag === R.page && R.anclaCh === R.ch && R.anclaS != null) ? R.anclaS
+          : (R.spans.length ? fraseAlInicio(R.page) : null);
+  const fr = R.page / R.pages;
+  fn(); medir();
+  irPagina(s != null && R.sent[s] ? paginaDe(R.sent[s].spans[0]) : Math.round(fr * R.pages));
+  R.anclaS = s; R.anclaPag = R.page; R.anclaCh = R.ch;
+}
+function capituloActual(){
+  let lab = ''; for (const t of R.info.toc){ if (t.ch <= R.ch) lab = t.label; else break }
+  return lab || R.meta.titulo;
+}
+function pctLibro(){ return pctDe(R.meta, { ch: R.ch, frac: R.pages > 1 ? R.page / (R.pages - 1) : 1 }) }
+function pie(){
+  $('#fCap').textContent = capituloActual();
+  $('#fPag').textContent = R.n === 2 ? `págs. ${R.page * 2 + 1}-${R.page * 2 + 2} de ${R.pages * 2} · ${pctLibro()}%` : `pág. ${R.page + 1} de ${R.pages} · ${pctLibro()}%`;
+}
+let progT = 0;
+function guardarProgreso(){
+  clearTimeout(progT);
+  progT = setTimeout(() => {
+    if (!R.id) return;
+    const s = R.spans.length ? fraseAlInicio(R.page) : null;
+    DB.setProg(R.id, { ch: R.ch, s, frac: R.pages > 1 ? R.page / (R.pages - 1) : 1, t: Date.now() }).catch(() => {});
+  }, 350);
+}
+
+async function abrirCapitulo(ch, op = {}){
+  R.ocupado = true; R.ch = ch;
+  R.urls.forEach(u => URL.revokeObjectURL(u)); R.urls = [];
+  flow.style.transform = 'none'; flow.textContent = '';
+  const it = R.info.spine[ch];
+  const txt = await zfile(R.zip, it.href).async('string');
+  let d = new DOMParser().parseFromString(txt, 'application/xhtml+xml');
+  if (d.getElementsByTagName('parsererror').length) d = new DOMParser().parseFromString(txt, 'text/html');
+  const body = porTag(d, 'body')[0] || d.documentElement;
+  const ctx = { dir: carpeta(it.href), path: it.href, imgs: [] };
+  const fr = document.createDocumentFragment();
+  for (const c of body.childNodes){ const k = convertir(c, ctx); if (k) fr.appendChild(k) }
+  flow.appendChild(fr);
+  R.sent = envolverFrases(flow); R.spans = [...flow.querySelectorAll('span.s')];
+  if (ctx.imgs.length) await Promise.race([Promise.all(ctx.imgs), esperar(4000)]);
+  medir();
+  let p = op.page || 0;
+  if (op.ultima) p = R.pages - 1;
+  else if (op.s != null && R.sent[op.s]) p = paginaDe(R.sent[op.s].spans[0]);
+  else if (op.frag){ const el = flow.querySelector('#' + CSS.escape('b_' + op.frag)); if (el) p = paginaDe(el) }
+  else if (op.frac != null) p = Math.round(op.frac * (R.pages - 1));
+  irPagina(p);
+  R.ocupado = false;
+}
+
+async function abrirLibro(id){
+  const cg = $('#cargando'); $('#rd').hidden = false; cg.hidden = false; $('#lib').hidden = true;
+  try{
+    R.id = id; R.meta = await DB.get(id); R.hist = []; $('#volver').hidden = true;
+    const file = await DB.file(id);
+    R.zip = await JSZip.loadAsync(file);
+    R.info = await parsearEpub(R.zip);
+    $('#bTit').textContent = R.meta.titulo;
+    aplicarEstilo();
+    const pr = await DB.prog(id);
+    await abrirCapitulo(clamp(pr?.ch || 0, 0, R.info.spine.length - 1), { s: pr?.s, frac: pr?.frac });
+    try{ history.pushState({ lector: 1 }, '') }catch(e){}
+    despertar();
+    if (!pr) setTimeout(() => toast('Tocá el centro para ver el menú · los costados pasan página', 3800), 400);
+  }catch(e){ console.error(e); toast('No se pudo abrir: ' + (e.message || e)); cerrarLector(true) }
+  cg.hidden = true;
+}
+function cerrarLector(sinHist){
+  vozParar(true); $('#tts').hidden = true; $('#rd').classList.remove('con-tts');
+  $('#bar').hidden = true; $('#rd').hidden = true; $('#lib').hidden = false;
+  guardarProgreso(); R.id = null; despertar();
+  R.urls.forEach(u => URL.revokeObjectURL(u)); R.urls = []; flow.textContent = '';
+  pintarEstante();
+}
+
+/* ---------- pasar página ---------- */
+async function siguiente(usuario){
+  if (R.ocupado) return;
+  if (R.page < R.pages - 1) irPagina(R.page + 1);
+  else if (R.ch < R.info.spine.length - 1) await abrirCapitulo(R.ch + 1);
+  else { toast('Fin del libro'); return }
+  if (usuario) trasPasarAMano();
+}
+async function anterior(usuario){
+  if (R.ocupado) return;
+  if (R.page > 0) irPagina(R.page - 1);
+  else if (R.ch > 0) await abrirCapitulo(R.ch - 1, { ultima: true });
+  else return;
+  if (usuario) trasPasarAMano();
+}
+function trasPasarAMano(){ R.dormido = false; if (T.leyendo) vozReiniciar(fraseAlInicio(R.page) ?? 0) }
+
+async function seguirLink(a){
+  if (a.dataset.ext){ try{ window.open(a.dataset.ext, '_blank', 'noopener') }catch(e){} return }
+  const ch = +a.dataset.ch; if (!(ch >= 0)) return;
+  R.hist.push({ ch: R.ch, page: R.page }); $('#volver').hidden = false;
+  if (ch === R.ch && a.dataset.frag){ const el = flow.querySelector('#' + CSS.escape('b_' + a.dataset.frag)); if (el) irPagina(paginaDe(el)) }
+  else await abrirCapitulo(ch, { frag: a.dataset.frag });
+}
+$('#volver').onclick = async () => {
+  const h = R.hist.pop(); if (!h) return; $('#volver').hidden = !R.hist.length;
+  if (h.ch === R.ch) irPagina(h.page); else await abrirCapitulo(h.ch, { page: h.page });
+};
+
+/* toques: costado izquierdo = atrás, derecho = adelante, centro = menú; también deslizar */
+let pd = null;
+pv.addEventListener('pointerdown', e => { pd = { x: e.clientX, y: e.clientY } });
+pv.addEventListener('pointercancel', () => pd = null);
+pv.addEventListener('pointerup', e => {
+  if (!pd) return; const dx = e.clientX - pd.x, dy = e.clientY - pd.y; pd = null;
+  if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)){ dx < 0 ? siguiente(true) : anterior(true); return }
+  if (Math.abs(dx) > 14 || Math.abs(dy) > 14) return;
+  const a = e.target.closest && e.target.closest('a');
+  if (a && flow.contains(a)){ seguirLink(a); return }
+  if (!$('#bar').hidden){ $('#bar').hidden = true; return }
+  const x = e.clientX / innerWidth;
+  if (x < 0.3) anterior(true); else if (x > 0.7) siguiente(true); else { $('#bar').hidden = false; marcarSol() }
+});
+flow.addEventListener('click', e => { if (e.target.closest('a')) e.preventDefault() });
+document.addEventListener('keydown', e => {
+  if ($('#rd').hidden || !$('#sheet').hidden) return;
+  if (['ArrowRight','PageDown',' '].includes(e.key)){ e.preventDefault(); siguiente(true) }
+  if (['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); anterior(true) }
+});
+let rsT = 0;
+addEventListener('resize', () => { clearTimeout(rsT); rsT = setTimeout(() => { if (!$('#rd').hidden && R.info) conAncla(() => {}) }, 250) });
+document.fonts && document.fonts.addEventListener && document.fonts.addEventListener('loadingdone', () => { if (!$('#rd').hidden && R.info && !R.ocupado) conAncla(() => {}) });
+
+/* =========================================================
+   PANTALLA SIEMPRE ENCENDIDA (Wake Lock)
+   Se prende si la activás con ☀, y sola mientras te lee.
+   ========================================================= */
+const WL = { s: null, pidiendo: false, ok: 'wakeLock' in navigator };
+async function despertar(){
+  const quiero = !$('#rd').hidden && !R.dormido && (P.siempre || T.leyendo) && document.visibilityState === 'visible';
+  if (quiero && !WL.s && WL.ok && !WL.pidiendo){
+    WL.pidiendo = true;
+    try{ WL.s = await navigator.wakeLock.request('screen'); WL.s.addEventListener('release', () => { WL.s = null; marcarSol() }) }
+    catch(e){ WL.error = e.message }
+    WL.pidiendo = false;
+  } else if (!quiero && WL.s){ try{ await WL.s.release() }catch(e){} WL.s = null }
+  marcarSol();
+}
+function marcarSol(){
+  const b = $('#sol'); b.classList.toggle('on', !!P.siempre);
+  b.title = !WL.ok ? 'Este navegador no permite mantener la pantalla encendida' : P.siempre ? 'Pantalla siempre encendida: SÍ' : 'Pantalla siempre encendida: no';
+}
+document.addEventListener('visibilitychange', () => { despertar(); if (document.visibilityState === 'hidden') guardarProgreso() });
+$('#sol').onclick = () => {
+  if (!WL.ok){ toast('Este navegador no deja mantener la pantalla encendida'); return }
+  P.siempre = !P.siempre; guardarP(); R.dormido = false; despertar();
+  toast(P.siempre ? '☀ La pantalla queda encendida mientras leés' : 'La pantalla se apaga como siempre (salvo mientras te leo)');
+};
+
+/* =========================================================
+   LEER EN VOZ ALTA (voces del propio Android, sin internet)
+   ========================================================= */
+const T = { leyendo: false, s: 0, tok: 0, utt: null, fin: 0, modo: 0, hl: [] };
+const VELS = [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2];
+const TIMERS = [0, 15, 30, 60, 'cap'];
+const hayVoz = 'speechSynthesis' in window;
+function voces(){
+  if (!hayVoz) return [];
+  const pref = ['es-AR','es-US','es-419','es-MX','es-ES'];
+  const rank = v => { const i = pref.findIndex(p => v.lang.replace('_','-').toLowerCase().startsWith(p.toLowerCase())); return (i < 0 ? 9 : i) + (v.localService ? 0 : .5) };
+  return speechSynthesis.getVoices().filter(v => /^es/i.test(v.lang)).sort((a, b) => rank(a) - rank(b));
+}
+const vozElegida = () => { const vs = voces(); return vs.find(v => v.voiceURI === P.voz) || vs[0] || null };
+function resaltar(i){
+  T.hl.forEach(s => s.classList.remove('hl'));
+  T.hl = R.sent[i] ? R.sent[i].spans : []; T.hl.forEach(s => s.classList.add('hl'));
+}
+function trozos(t){
+  t = t.replace(/\s+/g, ' ').trim(); if (t.length <= 220) return [t];
+  const out = []; let cur = '';
+  for (const p of t.split(/(?<=[,;:—])\s+/)){
+    if ((cur + ' ' + p).length > 220 && cur){ out.push(cur); cur = p } else cur = cur ? cur + ' ' + p : p;
+  }
+  if (cur) out.push(cur);
+  return out.flatMap(x => x.length <= 320 ? [x] : x.match(/.{1,220}(\s|$)/g));
+}
+function vozEmpezar(desde){
+  if (!hayVoz){ toast('Este navegador no tiene lectura en voz alta'); return }
+  if (!voces().length) toast('No encuentro voces en español: instalalas en Ajustes de Android › Texto a voz', 4500);
+  T.leyendo = true; R.dormido = false;
+  $('#tts').hidden = false; $('#bar').hidden = true;
+  if (!$('#rd').classList.contains('con-tts')) conAncla(() => $('#rd').classList.add('con-tts'));
+  T.s = desde ?? fraseAlInicio(R.page) ?? 0;
+  pintarTts(); despertar();
+  speechSynthesis.cancel(); setTimeout(decir, 60);
+}
+function vozParar(cerrar){
+  T.leyendo = false; T.tok++; if (hayVoz) speechSynthesis.cancel();
+  if (cerrar){ resaltar(-1); T.fin = 0; T.modo = 0 }
+  pintarTts(); despertar();
+}
+function vozReiniciar(desde){ T.tok++; speechSynthesis.cancel(); T.s = desde; setTimeout(decir, 60) }
+async function decir(){
+  if (!T.leyendo) return;
+  const tok = ++T.tok;
+  while (T.s < R.sent.length && !/[\p{L}\p{N}]/u.test(R.sent[T.s].text)) T.s++;
+  if (T.s >= R.sent.length){
+    if (TIMERS[T.modo] === 'cap'){ dormir(); return }
+    if (R.ch < R.info.spine.length - 1){
+      await abrirCapitulo(R.ch + 1); if (tok !== T.tok || !T.leyendo) return;
+      T.s = 0; return decir();
+    }
+    vozParar(true); toast('Fin del libro'); return;
+  }
+  const se = R.sent[T.s]; resaltar(T.s);
+  const p = paginaDe(se.spans[0]); if (p !== R.page) irPagina(p);
+  const partes = trozos(se.text); let k = 0;
+  const otra = () => {
+    if (tok !== T.tok || !T.leyendo) return;
+    if (k >= partes.length){ T.s++; decir(); return }
+    const u = new SpeechSynthesisUtterance(partes[k++]); const v = vozElegida();
+    if (v){ u.voice = v; u.lang = v.lang } else u.lang = 'es-AR';
+    u.rate = P.vel; u.onend = otra;
+    u.onerror = e => { if (e.error === 'interrupted' || e.error === 'canceled') return; setTimeout(otra, 150) };
+    T.utt = u; speechSynthesis.speak(u);
+  };
+  otra();
+}
+function dormir(){ vozParar(false); T.fin = 0; T.modo = 0; R.dormido = true; despertar(); pintarTts(); toast('☾ Temporizador: dejé de leer') }
+setInterval(() => { if (T.leyendo && T.fin && Date.now() > T.fin) dormir(); else if (T.fin) pintarTts() }, 15000);
+function pintarTts(){
+  const pl = $('#tPlay'); pl.innerHTML = `<svg class="i"><use href="#i-${T.leyendo ? 'pausa' : 'play'}"/></svg>`;
+  pl.setAttribute('aria-label', T.leyendo ? 'Pausa' : 'Seguir leyendo');
+  $('#tVel').textContent = (P.vel + '').replace('.', ',') + '×';
+  const m = TIMERS[T.modo];
+  $('#tTim').textContent = !m ? '☾ no' : m === 'cap' ? '☾ cap.' : '☾ ' + Math.max(1, Math.ceil((T.fin - Date.now()) / 60000)) + '′';
+}
+$('#bLeer').onclick = () => vozEmpezar();
+$('#tPlay').onclick = () => T.leyendo ? vozParar(false) : vozEmpezar(T.s);
+$('#tAnt').onclick = () => { const s = Math.max(0, T.s - 1); if (T.leyendo) vozReiniciar(s); else { T.s = s; resaltar(s); irPagina(paginaDe(R.sent[s]?.spans[0])) } };
+$('#tSig').onclick = () => { const s = Math.min(R.sent.length - 1, T.s + 1); if (T.leyendo) vozReiniciar(s); else { T.s = s; resaltar(s); irPagina(paginaDe(R.sent[s]?.spans[0])) } };
+$('#tVel').onclick = () => { const i = VELS.indexOf(P.vel); P.vel = VELS[(i + 1) % VELS.length]; guardarP(); pintarTts(); if (T.leyendo) vozReiniciar(T.s) };
+$('#tTim').onclick = () => {
+  T.modo = (T.modo + 1) % TIMERS.length; const m = TIMERS[T.modo];
+  T.fin = typeof m === 'number' && m ? Date.now() + m * 60000 : 0;
+  pintarTts(); toast(!m ? 'Sin temporizador' : m === 'cap' ? '☾ Dejo de leer al terminar el capítulo' : `☾ Dejo de leer en ${m} minutos`);
+};
+$('#tCerrar').onclick = () => { vozParar(true); $('#tts').hidden = true; conAncla(() => $('#rd').classList.remove('con-tts')) };
+if (hayVoz) speechSynthesis.onvoiceschanged = () => { if (!$('#sheet').hidden && $('#selVoz')) llenarVoces($('#selVoz')) };
+
+/* =========================================================
+   PANELES: índice y ajustes
+   ========================================================= */
+function abrirHoja(titulo, contenido){
+  const s = $('#sheet'), inn = s.querySelector('.sh-in'); inn.innerHTML = '';
+  const h = document.createElement('div'); h.className = 'sh-h';
+  h.innerHTML = `<h2>${esc(titulo)}</h2><button class="ib" aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button>`;
+  h.querySelector('button').onclick = cerrarHoja;
+  inn.append(h, contenido); s.hidden = false; inn.scrollTop = 0;
+  try{ history.pushState({ hoja: 1 }, '') }catch(e){}
+}
+let ignorarPop = false;
+function cerrarHoja(desdePop){
+  if ($('#sheet').hidden) return;
+  $('#sheet').hidden = true;
+  if (!desdePop && history.state && history.state.hoja){ ignorarPop = true; try{ history.back() }catch(e){ ignorarPop = false } }
+}
+$('#sheet .fondo').onclick = cerrarHoja;
+
+$('#bIndice').onclick = () => {
+  const d = document.createElement('div'); d.className = 'toc';
+  const lista = R.info.toc.length ? R.info.toc : R.info.spine.map((_, i) => ({ label: 'Sección ' + (i + 1), ch: i, frag: '', dep: 0 }));
+  let act = null;
+  lista.forEach(t => {
+    const b = document.createElement('button'); b.textContent = t.label; b.style.paddingLeft = (0.2 + t.dep * 1.1) + 'em';
+    if (t.ch <= R.ch) act = b;
+    b.onclick = async () => { cerrarHoja(); $('#bar').hidden = true; R.hist.push({ ch: R.ch, page: R.page }); $('#volver').hidden = false;
+      await abrirCapitulo(t.ch, { frag: t.frag }); trasPasarAMano() };
+    d.appendChild(b);
+  });
+  if (act) act.classList.add('act');
+  abrirHoja('Índice', d);
+  if (act) act.scrollIntoView({ block: 'center' });
+};
+
+function llenarVoces(sel){
+  const vs = voces(); sel.innerHTML = '';
+  if (!vs.length){ sel.innerHTML = '<option>Sin voces en español</option>'; sel.disabled = true; return }
+  sel.disabled = false; const el = vozElegida();
+  for (const v of vs){ const o = document.createElement('option'); o.value = v.voiceURI;
+    o.textContent = `${v.name.replace(/^(Google|Microsoft)\s*/,'')} (${v.lang})${v.localService ? '' : ' · con internet'}`;
+    if (el && v.voiceURI === el.voiceURI) o.selected = true; sel.appendChild(o) }
+}
+function grupo(opciones, actual, al){
+  const g = document.createElement('div'); g.className = 'grp';
+  for (const [val, txt] of opciones){
+    const b = document.createElement('button'); b.textContent = txt; b.setAttribute('aria-pressed', val === actual ? 'true' : 'false');
+    b.onclick = () => { g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); al(val) };
+    g.appendChild(b);
+  }
+  return g;
+}
+function fila(label, nodo){ const f = document.createElement('div'); f.className = 'fila'; const s = document.createElement('span'); s.textContent = label; f.append(s, nodo); return f }
+function cambiar(fn){ fn(); guardarP(); if (!$('#rd').hidden && R.info) conAncla(aplicarEstilo); else aplicarEstilo() }
+
+$('#bAjustes').onclick = () => {
+  const d = document.createElement('div');
+  d.append(
+    fila('Tema', grupo([['tinta','Tinta'],['noche','Noche']], P.tema, v => cambiar(() => P.tema = v))),
+    (() => { const g = document.createElement('div'); g.className = 'grp';
+      const n = document.createElement('span'); n.className = 'ui'; n.style.cssText = 'min-width:2.4em;text-align:center'; n.textContent = P.fs;
+      const menos = document.createElement('button'); menos.textContent = 'A−'; menos.style.fontSize = '13px';
+      const mas = document.createElement('button'); mas.textContent = 'A+'; mas.style.fontSize = '18px';
+      menos.onclick = () => cambiar(() => { P.fs = clamp(P.fs - 1, 14, 34); n.textContent = P.fs });
+      mas.onclick = () => cambiar(() => { P.fs = clamp(P.fs + 1, 14, 34); n.textContent = P.fs });
+      g.append(menos, n, mas); return fila('Tamaño de letra', g) })(),
+    fila('Letra', grupo([['serif','Literata'],['sans','Sin serifa']], P.fuente, v => cambiar(() => P.fuente = v))),
+    fila('Interlineado', grupo([[1.4,'Junto'],[1.6,'Normal'],[1.85,'Aireado']], P.lh, v => cambiar(() => P.lh = v))),
+    fila('Márgenes', grupo([[0,'Chicos'],[1,'Medios'],[2,'Grandes']], P.marg, v => cambiar(() => P.marg = v))),
+    fila('Texto justificado', grupo([[true,'Sí'],[false,'No']], !!P.just, v => cambiar(() => P.just = v))),
+    fila('Pantalla siempre encendida', grupo([[true,'Sí'],[false,'No']], !!P.siempre, v => { P.siempre = v; guardarP(); R.dormido = false; despertar() })),
+  );
+  const nota = document.createElement('p'); nota.className = 'nota ui';
+  nota.textContent = WL.ok ? 'Mientras te leo en voz alta, la pantalla queda encendida sola: si se apaga, Android corta la voz.' : 'Este navegador no permite mantener la pantalla encendida.';
+  d.appendChild(nota);
+  const sel = document.createElement('select'); sel.id = 'selVoz'; llenarVoces(sel);
+  sel.onchange = () => { P.voz = sel.value; guardarP(); if (T.leyendo) vozReiniciar(T.s) };
+  const prob = document.createElement('button'); prob.textContent = 'Probar voz';
+  prob.onclick = () => { if (!hayVoz) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance('Hola Rober. Así suena esta voz leyendo tus libros.'); const v = vozElegida(); if (v){ u.voice = v; u.lang = v.lang } u.rate = P.vel; speechSynthesis.speak(u) };
+  const g = document.createElement('div'); g.className = 'grp'; g.append(sel);
+  d.append(fila('Voz', g), fila('Velocidad de lectura', grupo(VELS.map(v => [v, (v + '').replace('.', ',') + '×']), P.vel, v => { P.vel = v; guardarP(); pintarTts(); if (T.leyendo) vozReiniciar(T.s) })));
+  const g2 = document.createElement('div'); g2.className = 'grp'; g2.append(prob); d.append(fila('', g2));
+  abrirHoja('Letra y ajustes', d);
+};
+
+$('#bEstante').onclick = () => { try{ history.back() }catch(e){ cerrarLector() } setTimeout(() => { if (!$('#rd').hidden) cerrarLector() }, 300) };
+addEventListener('popstate', () => {
+  if (ignorarPop){ ignorarPop = false; return }
+  if (!$('#sheet').hidden){ cerrarHoja(true); return }
+  if (!$('#rd').hidden) cerrarLector(true);
+});
+
+$('#bTema').onclick = () => { P.tema = P.tema === 'noche' ? 'tinta' : 'noche'; guardarP(); aplicarEstilo() };
+$('#fi').onchange = e => { importar(e.target.files); e.target.value = '' };
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => { e.preventDefault(); if ($('#rd').hidden) importar(e.dataTransfer.files) });
+
+/* =========================================================
+   ARRANQUE
+   ========================================================= */
+(async () => {
+  aplicarEstilo();
+  db = await abrirDB();
+  if (!db){ const a = $('#aviso'); a.hidden = false;
+    a.textContent = 'Este navegador no me deja guardar libros acá: se pierden al cerrar. Instalada desde tu GitHub Pages sí quedan guardados.' }
+  try{ navigator.storage && navigator.storage.persist && navigator.storage.persist() }catch(e){}
+  // libros compartidos desde otra app (Compartir › Estante)
+  if (/compartido/.test(location.search) && 'caches' in window){
+    try{ const c = await caches.open('compartidos'); const ks = await c.keys(); const fs = [];
+      for (const k of ks){ const r = await c.match(k); const b = await r.blob();
+        fs.push(new File([b], decodeURIComponent(r.headers.get('x-nombre') || 'libro.epub'), { type: b.type })); await c.delete(k) }
+      history.replaceState(null, '', location.pathname);
+      if (fs.length) await importar(fs);
+    }catch(e){ console.warn(e) }
+  }
+  pintarEstante();
+  if ('serviceWorker' in navigator && location.protocol === 'https:'){
+    try{ navigator.serviceWorker.register('sw.js').catch(() => {}) }catch(e){}
+  }
+})();
+</script>
+</body>
+</html>
